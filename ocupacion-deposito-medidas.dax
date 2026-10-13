@@ -1,0 +1,34 @@
+// Ocupación de Depósito · medidas DAX
+// Modelo: Posiciones (maestro de ubicaciones: sector, módulo, pasillo, nivel)
+//         Stock_Posicion (una fila por posición con su estado actual)
+
+Total Posiciones =
+COUNTROWS( Posiciones )
+
+Posiciones Ocupadas =
+CALCULATE( COUNTROWS( Stock_Posicion ), Stock_Posicion[estado] = "ocupado" )
+
+Posiciones Libres =
+CALCULATE( COUNTROWS( Stock_Posicion ), Stock_Posicion[estado] = "libre" )
+
+Posiciones Bloqueadas =
+CALCULATE( COUNTROWS( Stock_Posicion ), Stock_Posicion[estado] = "bloqueado" )
+
+% Ocupación =
+DIVIDE( [Posiciones Ocupadas], [Total Posiciones] )
+
+% Ocupación por Sector =
+// se evalúa en el contexto de fila de Posiciones[sector] al ponerla en una tabla/gráfico
+DIVIDE(
+    CALCULATE( [Posiciones Ocupadas] ),
+    CALCULATE( [Total Posiciones] )
+)
+
+Sectores en Alerta (>95%) =
+VAR TablaSectores =
+    ADDCOLUMNS(
+        VALUES( Posiciones[sector] ),
+        "OcupacionPct", [% Ocupación por Sector]
+    )
+RETURN
+    COUNTROWS( FILTER( TablaSectores, [OcupacionPct] > 0.95 ) )

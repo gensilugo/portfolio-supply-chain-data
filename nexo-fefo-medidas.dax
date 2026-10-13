@@ -1,0 +1,38 @@
+// NEXO-FEFO · medidas DAX del panel de compliance
+// (sobre el modelo de relevamientos + alertas de schema.sql)
+
+Cumplimiento FEFO % =
+DIVIDE(
+    CALCULATE( COUNTROWS( Relevamientos ), Relevamientos[es_desvio] = FALSE ),
+    COUNTROWS( Relevamientos )
+)
+
+Desvios FEFO =
+CALCULATE( COUNTROWS( Relevamientos ), Relevamientos[es_desvio] = TRUE )
+
+Reduccion Errores Rotacion % =
+VAR DesviosActual = [Desvios FEFO]
+VAR DesviosBaseline =
+    CALCULATE(
+        COUNTROWS( Relevamientos ),
+        Relevamientos[es_desvio] = TRUE,
+        Relevamientos[semana_piloto] <= 1
+    )
+RETURN
+    DIVIDE( DesviosActual - DesviosBaseline, DesviosBaseline )
+
+Alertas Detectadas a Tiempo % =
+DIVIDE(
+    CALCULATE( COUNTROWS( Alertas ), Alertas[detectada_a_tiempo] = TRUE ),
+    COUNTROWS( Alertas )
+)
+
+Cumplimiento FEFO % (Acumulado a la fecha) =
+// Para el gráfico de evolución semana a semana
+CALCULATE(
+    [Cumplimiento FEFO %],
+    FILTER(
+        ALL( Relevamientos[semana_piloto] ),
+        Relevamientos[semana_piloto] <= MAX( Relevamientos[semana_piloto] )
+    )
+)

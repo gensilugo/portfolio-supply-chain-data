@@ -91,6 +91,6 @@
     }
   },
   "meta": {
-    "note": "Plantilla reconstruida a partir de la estructura real del workflow. No es el export literal de producción — ver README de esta carpeta."
+    "note": "Plantilla reconstruida a partir de la estructura real del workflow. No es el export literal de producción — ver automatizacion-n8n.md."
   }
 }

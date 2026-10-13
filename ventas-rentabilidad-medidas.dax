@@ -1,0 +1,35 @@
+// Ventas & Rentabilidad · medidas DAX
+// Modelo: Ventas (hecho), Costos (hecho), Dim_Fecha, Dim_Producto, Dim_MedioPago, Dim_Zona
+
+Total Ventas =
+SUM( Ventas[importe] )
+
+Total Costos =
+SUM( Costos[importe] )
+
+Margen $ =
+[Total Ventas] - [Total Costos]
+
+Rentabilidad % =
+DIVIDE( [Margen $], [Total Ventas] )
+
+Cantidades Vendidas =
+SUM( Ventas[unidades] )
+
+Rentabilidad % por Medio de Pago =
+// se evalúa en contexto de fila de Dim_MedioPago[medio] al ponerla en una tabla/gráfico
+DIVIDE(
+    CALCULATE( [Margen $] ),
+    CALCULATE( [Total Ventas] )
+)
+
+Ventas vs Objetivo % =
+VAR Objetivo = SELECTEDVALUE( Dim_Fecha[objetivo_mensual] )
+RETURN
+    DIVIDE( [Total Ventas], Objetivo )
+
+Ventas Mes Anterior =
+CALCULATE( [Total Ventas], DATEADD( Dim_Fecha[fecha], -1, MONTH ) )
+
+Variacion Ventas MoM % =
+DIVIDE( [Total Ventas] - [Ventas Mes Anterior], [Ventas Mes Anterior] )
