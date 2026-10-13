@@ -1,0 +1,96 @@
+{
+  "name": "Alerta temprana de stock crítico",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            { "field": "cronExpression", "expression": "0 8 * * *" }
+          ]
+        }
+      },
+      "name": "Todos los días 8:00",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "operation": "read",
+        "sheetId": "REEMPLAZAR_CON_ID_DE_PLANILLA",
+        "range": "Inventario!A2:G"
+      },
+      "name": "Leer inventario",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// dias_cobertura = stock_actual / consumo_diario_promedio\n// estado = 'critico' si dias_cobertura < lead_time_proveedor\n//          'punto_de_pedido' si stock_actual <= stock_seguridad\n//          'ok' en otro caso\nreturn items.map(item => {\n  const { stock_actual, consumo_diario, lead_time_proveedor, stock_seguridad } = item.json;\n  const diasCobertura = stock_actual / consumo_diario;\n  let estado = 'ok';\n  if (diasCobertura < lead_time_proveedor) estado = 'critico';\n  else if (stock_actual <= stock_seguridad) estado = 'punto_de_pedido';\n  item.json.dias_cobertura = diasCobertura;\n  item.json.estado = estado;\n  item.json.en_alerta = estado !== 'ok';\n  return item;\n});"
+      },
+      "name": "Calcular cobertura y estado",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            { "value1": "={{ $json.en_alerta }}", "value2": true }
+          ]
+        }
+      },
+      "name": "¿Hay insumos en alerta?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [900, 300]
+    },
+    {
+      "parameters": {
+        "sendTo": "REEMPLAZAR_CON_MAIL_DESTINO",
+        "subject": "Alerta de stock crítico",
+        "message": "Hay insumos por debajo del punto de pedido o en estado crítico. Ver detalle y cantidad sugerida adjunta."
+      },
+      "name": "Enviar alerta por mail",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [1140, 200]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "sheetId": "REEMPLAZAR_CON_ID_DE_PLANILLA",
+        "range": "HistorialAlertas!A:E"
+      },
+      "name": "Registrar en historial",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [1360, 200]
+    }
+  ],
+  "connections": {
+    "Todos los días 8:00": {
+      "main": [[{ "node": "Leer inventario", "type": "main", "index": 0 }]]
+    },
+    "Leer inventario": {
+      "main": [[{ "node": "Calcular cobertura y estado", "type": "main", "index": 0 }]]
+    },
+    "Calcular cobertura y estado": {
+      "main": [[{ "node": "¿Hay insumos en alerta?", "type": "main", "index": 0 }]]
+    },
+    "¿Hay insumos en alerta?": {
+      "main": [
+        [{ "node": "Enviar alerta por mail", "type": "main", "index": 0 }],
+        []
+      ]
+    },
+    "Enviar alerta por mail": {
+      "main": [[{ "node": "Registrar en historial", "type": "main", "index": 0 }]]
+    }
+  },
+  "meta": {
+    "note": "Plantilla reconstruida a partir de la estructura real del workflow. No es el export literal de producción — ver README de esta carpeta."
+  }
+}
